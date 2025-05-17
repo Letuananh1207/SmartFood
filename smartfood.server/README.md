@@ -13,7 +13,7 @@
 
 1.  **Di chuyển vào thư mục dự án:**
     ```bash
-    cd bluemoon.server
+    cd smartfood.server
     ```
 
 2.  **Cài đặt các dependencies:**
@@ -34,7 +34,7 @@ npm run start:dev
 Đây là cấu trúc thư mục của dự án backend:
 
 ```
-bluemoon.server/
+smartfood.server/
 ├── node_modules/    # Chứa các thư viện và dependencies đã cài đặt
 ├── src/             # Chứa mã nguồn chính của backend
 │   ├── controller/  # Chứa các file xử lý logic nghiệp vụ và tương tác với model
