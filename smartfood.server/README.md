@@ -1,6 +1,6 @@
 # Dự án Backend
 
-Đây là dự án backend.
+Đây là dự án backend xây dựng bằng ExpressJS.
 
 ## Các công nghệ chính
 
