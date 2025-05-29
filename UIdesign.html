@@ -1,0 +1,693 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.18.9/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    // Login Screen (3.2.1)
+    const LoginScreen = ({ onLogin }) => {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+
+      const handleLogin = () => {
+        if (username && password) {
+          onLogin(username);
+        } else {
+          alert('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu');
+        }
+      };
+
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+            <h2 className="text-2xl font-bold mb-6 text-center">Đăng nhập</h2>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Tên đăng nhập</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-2 border rounded"
+                placeholder="Nhập tên đăng nhập"
+              />
+            </div>
+            <div className="mb-6">
+              <label className="block text-gray-700 mb-2">Mật khẩu</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 border rounded"
+                placeholder="Nhập mật khẩu"
+              />
+            </div>
+            <div className="mb-4">
+              <a href="#" className="text-blue-500 hover:underline">Quên mật khẩu?</a>
+            </div>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+              Đăng nhập
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // Home Screen (3.2.2)
+    const HomeScreen = ({ username, onNavigate }) => {
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Trang chủ</h2>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">{username}</span>
+              <button
+                onClick={() => onNavigate('login')}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <button
+              onClick={() => onNavigate('orders')}
+              className="bg-blue-500 text-white p-4 rounded hover:bg-blue-600"
+            >
+              Đơn hàng yêu cầu
+            </button>
+            <button
+              onClick={() => onNavigate('sites')}
+              className="bg-blue-500 text-white p-4 rounded hover:bg-blue-600"
+            >
+              Site
+            </button>
+            <button
+              onClick={() => onNavigate('inventory')}
+              className="bg-blue-500 text-white p-4 rounded hover:bg-blue-600"
+            >
+              Quản lý kho
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // Order to Site Screen (3.2.3)
+    const OrderToSiteScreen = ({ onBack }) => {
+      const [siteFilter, setSiteFilter] = useState('');
+      const [statusFilter, setStatusFilter] = useState('');
+
+      const orders = [
+        { site: 'Quanchau', total: 31295.00, status: 'Đã nhận hàng' },
+        { site: 'Quanchau', total: 31295.00, status: 'Chờ xử lý' },
+      ];
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Đơn hàng đặt đến Site</h2>
+          <div className="flex space-x-4 mb-6">
+            <div>
+              <label className="block text-gray-700 mb-2">Lọc theo tên site</label>
+              <input
+                type="text"
+                value={siteFilter}
+                onChange={(e) => setSiteFilter(e.target.value)}
+                className="p-2 border rounded"
+                placeholder="Nhập tên site"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Lọc theo trạng thái</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="p-2 border rounded"
+              >
+                <option value="">Tất cả</option>
+                <option value="Đã nhận hàng">Đã nhận hàng</option>
+                <option value="Chờ xử lý">Chờ xử lý</option>
+              </select>
+            </div>
+            <button className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Search</button>
+          </div>
+          <table className="w-full border-collapse bg-white shadow rounded">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2 border">Tên Site</th>
+                <th className="p-2 border">Tổng</th>
+                <th className="p-2 border">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order, index) => (
+                <tr key={index} className="hover:bg-gray-100">
+                  <td className="p-2 border">{order.site}</td>
+                  <td className="p-2 border">{order.total.toFixed(2)}</td>
+                  <td className="p-2 border">{order.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Handle Canceled Order Screen (3.2.4, based on UC001)
+    const HandleCanceledOrderScreen = ({ onBack }) => {
+      const [orderId, setOrderId] = useState('');
+      const [products, setProducts] = useState([{ name: 'Táo', quantity: 2, site: 'Quanchau' }]);
+
+      const handleCreateOrder = () => {
+        alert('Đơn hàng đã được tạo lại!');
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Xử lý đơn hàng bị hủy</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Mã đơn hàng</label>
+              <input
+                type="text"
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
+                className="p-2 border rounded w-full"
+                placeholder="Nhập mã đơn hàng bị hủy"
+              />
+            </div>
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Tên sản phẩm</th>
+                  <th className="p-2 border">Số lượng</th>
+                  <th className="p-2 border">Site</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="p-2 border">{product.name}</td>
+                    <td className="p-2 border">
+                      <input
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) => {
+                          const newProducts = [...products];
+                          newProducts[index].quantity = e.target.value;
+                          setProducts(newProducts);
+                        }}
+                        className="p-1 border rounded w-full"
+                      />
+                    </td>
+                    <td className="p-2 border">{product.site}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              onClick={handleCreateOrder}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+              Tạo lại đơn hàng
+            </button>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Create Order Screen (3.2.5, based on UC101)
+    const CreateOrderScreen = ({ onBack }) => {
+      const [selectedOrder, setSelectedOrder] = useState('');
+      const [products, setProducts] = useState([{ name: 'Táo', quantity: 2, site: 'Quanchau' }]);
+
+      const handleCreateOrder = () => {
+        if (!selectedOrder) {
+          alert('Vui lòng chọn đơn mua!');
+          return;
+        }
+        alert('Đơn hàng đã được tạo!');
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Tạo đơn đặt hàng</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Chọn đơn mua</label>
+              <select
+                value={selectedOrder}
+                onChange={(e) => setSelectedOrder(e.target.value)}
+                className="p-2 border rounded w-full"
+              >
+                <option value="">Chọn đơn mua</option>
+                <option value="DH001">DH001</option>
+                <option value="DH002">DH002</option>
+              </select>
+            </div>
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Tên sản phẩm</th>
+                  <th className="p-2 border">Số lượng</th>
+                  <th className="p-2 border">Site</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="p-2 border">{product.name}</td>
+                    <td className="p-2 border">
+                      <input
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) => {
+                          const newProducts = [...products];
+                          newProducts[index].quantity = e.target.value;
+                          setProducts(newProducts);
+                        }}
+                        className="p-1 border rounded w-full"
+                      />
+                    </td>
+                    <td className="p-2 border">{product.site}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              onClick={handleCreateOrder}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+              Tạo đơn hàng
+            </button>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Add Product to Site Screen (3.2.6, based on UC03)
+    const AddProductToSiteScreen = ({ onBack }) => {
+      const [products, setProducts] = useState([{ name: 'Táo', quantity: 0 }]);
+
+      const handleSave = () => {
+        if (products.some(p => p.quantity < 0)) {
+          alert('Số lượng không hợp lệ!');
+          return;
+        }
+        alert('Sản phẩm đã được thêm vào site!');
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Thêm sản phẩm vào Site</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Tên sản phẩm</th>
+                  <th className="p-2 border">Số lượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="p-2 border">{product.name}</td>
+                    <td className="p-2 border">
+                      <input
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) => {
+                          const newProducts = [...products];
+                          newProducts[index].quantity = e.target.value;
+                          setProducts(newProducts);
+                        }}
+                        className="p-1 border rounded w-full"
+                        min="0"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              onClick={handleSave}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+              Lưu
+            </button>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Save to Inventory Screen (3.2.7, based on UC201)
+    const SaveToInventoryScreen = ({ onBack }) => {
+      const [orders, setOrders] = useState([
+        { id: 'DH001', quantity: 2, received: 2, status: 'Đã đến kho' },
+      ]);
+
+      const handleSave = () => {
+        alert('Thông tin đã được lưu vào kho!');
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Lưu thông tin vào kho</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Mã đơn hàng</th>
+                  <th className="p-2 border">Số lượng đặt</th>
+                  <th className="p-2 border">Số lượng nhận</th>
+                  <th className="p-2 border">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="p-2 border">{order.id}</td>
+                    <td className="p-2 border">{order.quantity}</td>
+                    <td className="p-2 border">
+                      <input
+                        type="number"
+                        value={order.received}
+                        onChange={(e) => {
+                          const newOrders = [...orders];
+                          newOrders[index].received = e.target.value;
+                          setOrders(newOrders);
+                        }}
+                        className="p-1 border rounded w-full"
+                        min="0"
+                      />
+                    </td>
+                    <td className="p-2 border">{order.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleSave}
+                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              >
+                Lưu
+              </button>
+              <button
+                onClick={() => alert('File Excel đã được xuất!')}
+                className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+              >
+                Xuất file Excel
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // View Ordered Items Screen (3.2.5, based on UC05)
+    const ViewOrderedItemsScreen = ({ onBack }) => {
+      const [searchId, setSearchId] = useState('');
+      const [items, setItems] = useState([
+        {
+          name: 'Táo',
+          quantity: 2,
+          price: 1000000,
+          unit: 'thùng',
+          currency: 'VND',
+          code: 'PI2022',
+          orderDate: '13/03/2024',
+          receiveDate: '18/03/2024',
+          status: 'Đơn hàng đi đến kho hải bề trưng, chờ xử lý',
+        },
+      ]);
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Xem đơn hàng đã đặt</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Tìm kiếm theo mã đơn hàng</label>
+              <input
+                type="text"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                className="p-2 border rounded w-full"
+                placeholder="Nhập mã đơn hàng"
+              />
+            </div>
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Tên sản phẩm</th>
+                  <th className="p-2 border">Số lượng</th>
+                  <th className="p-2 border">Giá</th>
+                  <th className="p-2 border">Đơn vị</th>
+                  <th className="p-2 border">Đơn vị tiền tệ</th>
+                  <th className="p-2 border">Mã sản phẩm</th>
+                  <th className="p-2 border">Ngày đặt đơn</th>
+                  <th className="p-2 border">Ngày nhận đơn</th>
+                  <th className="p-2 border">Tình trạng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="p-2 border">{item.name}</td>
+                    <td className="p-2 border">{item.quantity}</td>
+                    <td className="p-2 border">{item.price.toLocaleString()}</td>
+                    <td className="p-2 border">{item.unit}</td>
+                    <td className="p-2 border">{item.currency}</td>
+                    <td className="p-2 border">{item.code}</td>
+                    <td className="p-2 border">{item.orderDate}</td>
+                    <td className="p-2 border">{item.receiveDate}</td>
+                    <td className="p-2 border">{item.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Inventory Receipt Screen (3.2.9)
+    const InventoryReceiptScreen = ({ onBack }) => {
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Xuất phiếu nhập kho</h2>
+          <div className="bg-white p-6 rounded shadow">
+            <div className="flex justify-between mb-4">
+              <div>
+                <p><strong>Tấn Phúc</strong></p>
+                <p>95 phân guầy kho</p>
+              </div>
+              <div>
+                <p><strong>Kiểm hàng</strong></p>
+                <p>Mã đơn hàng: PI2022</p>
+              </div>
+            </div>
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">STT</th>
+                  <th className="p-2 border">Mã mặt hàng</th>
+                  <th className="p-2 border">Tên mặt hàng</th>
+                  <th className="p-2 border">Số lượng</th>
+                  <th className="p-2 border">Đã kiểm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="hover:bg-gray-100">
+                  <td className="p-2 border">1</td>
+                  <td className="p-2 border">PI2022</td>
+                  <td className="p-2 border">Táo</td>
+                  <td className="p-2 border">2</td>
+                  <td className="p-2 border">2</td>
+                </tr>
+              </tbody>
+            </table>
+            <button className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+              Xuất phiếu
+            </button>
+          </div>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Checked Items List Screen (3.2.8)
+    const CheckedItemsScreen = ({ onBack }) => {
+      const items = [
+        { id: 1, code: 'PI2022', name: 'Táo', price: 1000000, quantity: 2, checked: 2 },
+      ];
+
+      return (
+        <div className="min-h-screen bg-gray-100 p-6">
+          <h2 className="text-2xl font-bold mb-6">Danh sách mặt hàng đã kiểm</h2>
+          <table className="w-full border-collapse bg-white shadow rounded">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2 border">STT</th>
+                <th className="p-2 border">Mã mặt hàng</th>
+                <th className="p-2 border">Tên mặt hàng</th>
+                <th className="p-2 border">Giá</th>
+                <th className="p-2 border">Số lượng</th>
+                <th className="p-2 border">Đã kiểm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-100">
+                  <td className="p-2 border">{item.id}</td>
+                  <td className="p-2 border">{item.code}</td>
+                  <td className="p-2 border">{item.name}</td>
+                  <td className="p-2 border">{item.price.toLocaleString()}</td>
+                  <td className="p-2 border">{item.quantity}</td>
+                  <td className="p-2 border">{item.checked}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
+      );
+    };
+
+    // Main App Component
+    const App = () => {
+      const [currentScreen, setCurrentScreen] = useState('login');
+      const [username, setUsername] = useState('Tuấn Đăng');
+
+      const handleNavigate = (screen) => {
+        setCurrentScreen(screen);
+      };
+
+      return (
+        <div>
+          {currentScreen === 'login' && (
+            <LoginScreen onLogin={(user) => {
+              setUsername(user);
+              handleNavigate('home');
+            }} />
+          )}
+          {currentScreen === 'home' && (
+            <HomeScreen username={username} onNavigate={handleNavigate} />
+          )}
+          {currentScreen === 'orders' && <OrderToSiteScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'inventory' && <InventoryReceiptScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'sites' && (
+            <AddProductToSiteScreen onBack={() => handleNavigate('home')} />
+          )}
+          {currentScreen === 'canceled' && <HandleCanceledOrderScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'createOrder' && <CreateOrderScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'saveInventory' && <SaveToInventoryScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'viewOrders' && <ViewOrderedItemsScreen onBack={() => handleNavigate('home')} />}
+          {currentScreen === 'checkedItems' && <CheckedItemsScreen onBack={() => handleNavigate('home')} />}
+        </div>
+      );
+    };
+
+    // Render the App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
