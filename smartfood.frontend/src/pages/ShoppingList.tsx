@@ -5,60 +5,85 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Users, Calendar, ShoppingCart } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { ShoppingCart, Plus, X, User, Clock, DollarSign } from "lucide-react";
+import { useGroceryItems, GroceryItem } from "@/hooks/useGroceryItems";
+import { useFamilyMembers } from "@/hooks/useFamilyMembers";
+import { AddToFridgeDialog } from "@/components/AddToFridgeDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const ShoppingList = () => {
-  const [items, setItems] = useState([
-    { id: 1, name: "Cà chua", category: "Rau củ", quantity: "1 kg", completed: false, addedBy: "Mẹ" },
-    { id: 2, name: "Thịt bò", category: "Thịt cá", quantity: "500g", completed: false, addedBy: "Ba" },
-    { id: 3, name: "Gạo tẻ", category: "Đồ khô", quantity: "5 kg", completed: true, addedBy: "Mẹ" },
-    { id: 4, name: "Sữa tươi", category: "Sữa & trứng", quantity: "1 lít", completed: false, addedBy: "Con" },
-  ]);
-
   const [newItem, setNewItem] = useState({
-    name: "",
-    category: "",
-    quantity: "",
+    item_name: "",
+    item_type: "",
+    amount: "",
+    family_member_id: "",
+    price: "",
   });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [fridgeDialogOpen, setFridgeDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<GroceryItem | null>(null);
 
-  const categories = ["Rau củ", "Thịt cá", "Đồ khô", "Sữa & trứng", "Gia vị", "Đồ uống", "Khác"];
+  const { items, loading, addItem, toggleItem, completeItem, deleteItem } = useGroceryItems();
+  const { members } = useFamilyMembers();
 
-  const addItem = () => {
-    if (newItem.name && newItem.category && newItem.quantity) {
-      const item = {
-        id: Date.now(),
-        ...newItem,
-        completed: false,
-        addedBy: "Tôi",
-      };
-      setItems([...items, item]);
-      setNewItem({ name: "", category: "", quantity: "" });
-      toast({
-        title: "Đã thêm sản phẩm",
-        description: `${newItem.name} đã được thêm vào danh sách mua sắm`,
-      });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItem.item_name || !newItem.item_type || !newItem.amount || !newItem.family_member_id) return;
+
+    const itemData = {
+      ...newItem,
+      price: newItem.price ? parseFloat(newItem.price) : undefined,
+    };
+    delete (itemData as any).price; // Remove the string version
+    if (newItem.price) {
+      (itemData as any).price = parseFloat(newItem.price);
+    }
+
+    await addItem(itemData);
+    setNewItem({
+      item_name: "",
+      item_type: "",
+      amount: "",
+      family_member_id: "",
+      price: "",
+    });
+    setShowAddForm(false);
+  };
+
+  const handleItemClick = (item: GroceryItem) => {
+    if (!item.completed) {
+      setSelectedItem(item);
+      setFridgeDialogOpen(true);
     }
   };
 
-  const toggleItem = (id: number) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+  const handleItemAddedToFridge = () => {
+    if (selectedItem) {
+      completeItem(selectedItem.id);
+    }
+    setFridgeDialogOpen(false);
+    setSelectedItem(null);
   };
 
-  const deleteItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
-    toast({
-      title: "Đã xóa sản phẩm",
-      description: "Sản phẩm đã được xóa khỏi danh sách mua sắm",
-    });
-  };
+  const completedItems = items.filter(item => item.completed);
+  const pendingItems = items.filter(item => !item.completed);
 
-  const completedCount = items.filter(item => item.completed).length;
-  const totalCount = items.length;
+  const formatPrice = (price: number | null) => {
+    if (!price) return null;
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
 
   return (
     <div className="space-y-8">
@@ -68,156 +93,287 @@ const ShoppingList = () => {
           Danh sách mua sắm
         </h1>
         <p className="text-lg text-gray-600">
-          Quản lý danh sách mua sắm của gia đình bạn
+          Quản lý danh sách mua sắm cho gia đình
         </p>
       </div>
 
-      {/* Progress Summary */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Tiến độ mua sắm</h3>
-              <p className="text-sm text-gray-600">
-                {completedCount} / {totalCount} sản phẩm đã hoàn thành
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-primary">
-                {totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Cần mua</p>
+                <p className="text-2xl font-bold text-gray-900">{pendingItems.length}</p>
               </div>
-              <div className="text-sm text-gray-500">Hoàn thành</div>
+              <ShoppingCart className="h-8 w-8 text-blue-600" />
             </div>
-          </div>
-          <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
-            ></div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Đã mua</p>
+                <p className="text-2xl font-bold text-gray-900">{completedItems.length}</p>
+              </div>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-green-600">✓</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Add New Item */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
+      {/* Add Item Form */}
+      {showAddForm ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Thêm sản phẩm mới</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="item_name">Tên sản phẩm *</Label>
+                  <Input
+                    id="item_name"
+                    value={newItem.item_name}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, item_name: e.target.value }))}
+                    placeholder="VD: Cà chua, Thịt bò..."
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="item_type">Loại sản phẩm *</Label>
+                  <Select
+                    value={newItem.item_type}
+                    onValueChange={(value) => setNewItem(prev => ({ ...prev, item_type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại sản phẩm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Rau củ">Rau củ</SelectItem>
+                      <SelectItem value="Thịt cá">Thịt cá</SelectItem>
+                      <SelectItem value="Trái cây">Trái cây</SelectItem>
+                      <SelectItem value="Đồ khô">Đồ khô</SelectItem>
+                      <SelectItem value="Sữa & trứng">Sữa & trứng</SelectItem>
+                      <SelectItem value="Gia vị">Gia vị</SelectItem>
+                      <SelectItem value="Đồ uống">Đồ uống</SelectItem>
+                      <SelectItem value="Khác">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Số lượng *</Label>
+                  <Input
+                    id="amount"
+                    value={newItem.amount}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="VD: 1kg, 2 hộp, 500g..."
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price">Giá dự kiến (VND) *</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={newItem.price}
+                      onChange={(e) => setNewItem(prev => ({ ...prev, price: e.target.value }))}
+                      placeholder="VD: 25000, 50000..."
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="family_member">Người thêm *</Label>
+                  <Select
+                    value={newItem.family_member_id}
+                    onValueChange={(value) => setNewItem(prev => ({ ...prev, family_member_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn thành viên" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm sản phẩm
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddForm(false)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Hủy
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex justify-center">
+          <Button onClick={() => setShowAddForm(true)} size="lg">
+            <Plus className="h-5 w-5 mr-2" />
             Thêm sản phẩm mới
-          </CardTitle>
-          <CardDescription>
-            Thêm sản phẩm mới vào danh sách mua sắm của bạn
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Tên sản phẩm</Label>
-              <Input
-                id="name"
-                placeholder="Ví dụ: Cà chua"
-                value={newItem.name}
-                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Danh mục</Label>
-              <Select value={newItem.category} onValueChange={(value) => setNewItem({ ...newItem, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn danh mục" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Số lượng</Label>
-              <Input
-                id="quantity"
-                placeholder="Ví dụ: 1 kg"
-                value={newItem.quantity}
-                onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-              />
-            </div>
-          </div>
-          <Button onClick={addItem} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm vào danh sách
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Shopping List Items */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Danh sách hiện tại
-            </span>
-            <Badge variant="outline">{totalCount} sản phẩm</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Chưa có sản phẩm nào trong danh sách</p>
-                <p className="text-sm">Hãy thêm sản phẩm đầu tiên của bạn!</p>
+      {/* Shopping List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pending Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-orange-600">Cần mua ({pendingItems.length})</CardTitle>
+            <CardDescription>Nhấn vào sản phẩm để thêm vào tủ lạnh</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Đang tải...</p>
+              </div>
+            ) : pendingItems.length > 0 ? (
+              <div className="space-y-3">
+                {pendingItems.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">{item.item_name}</h3>
+                        {item.price && (
+                          <span className="text-sm font-semibold text-green-600">
+                            {formatPrice(item.price)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                          {item.item_type}
+                        </span>
+                        <span>{item.amount}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Avatar className="h-4 w-4">
+                          <AvatarFallback className="text-xs">{item.added_by?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-500">{item.added_by}</span>
+                        <Clock className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(item.created_at), "dd/MM", { locale: vi })}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteItem(item.id);
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-4 border rounded-lg transition-all duration-200 ${
-                    item.completed 
-                      ? 'bg-green-50 border-green-200' 
-                      : 'bg-white border-gray-200 hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Checkbox
-                        checked={item.completed}
-                        onCheckedChange={() => toggleItem(item.id)}
-                      />
-                      <div className={item.completed ? 'opacity-60' : ''}>
-                        <h4 className={`font-medium ${item.completed ? 'line-through' : ''}`}>
-                          {item.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {item.category}
-                          </Badge>
-                          <span className="text-sm text-gray-600">{item.quantity}</span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {item.addedBy}
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Không có sản phẩm nào cần mua</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Completed Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-green-600">Đã mua ({completedItems.length})</CardTitle>
+            <CardDescription>Các sản phẩm đã hoàn thành</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {completedItems.length > 0 ? (
+              <div className="space-y-3">
+                {completedItems.map((item) => (
+                  <div key={item.id} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                    <Checkbox
+                      checked={item.completed}
+                      onCheckedChange={(checked) => toggleItem(item.id, !!checked)}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium line-through text-gray-600">{item.item_name}</h3>
+                        {item.price && (
+                          <span className="text-sm font-semibold text-green-600">
+                            {formatPrice(item.price)}
                           </span>
-                        </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                          {item.item_type}
+                        </span>
+                        <span>{item.amount}</span>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteItem(item.id)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-green-600 text-xl">✓</span>
                 </div>
-              ))
+                <p className="text-gray-600">Chưa có sản phẩm nào được mua</p>
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      <AddToFridgeDialog
+        open={fridgeDialogOpen}
+        onOpenChange={setFridgeDialogOpen}
+        groceryItem={selectedItem}
+        onItemAdded={handleItemAddedToFridge}
+      />
     </div>
   );
 };
