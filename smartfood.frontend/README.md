@@ -1,53 +1,73 @@
-# Dự án Frontend
+# Welcome to your Lovable project
 
-Đây là dự án frontend được xây dựng bằng React và Vite.
+## Project info
 
-## Các công nghệ chính
+**URL**: https://lovable.dev/projects/e9395477-2637-41dd-b56b-169950bf71e9
 
-* **React:** Một thư viện JavaScript để xây dựng giao diện người dùng.
-* **Vite:** Một công cụ xây dựng thế hệ mới, cung cấp trải nghiệm phát triển cực nhanh.
+## How can I edit this code?
 
-## Cài đặt
+There are several ways of editing your application.
 
-Để chạy dự án này trên máy cục bộ của bạn, hãy làm theo các bước sau:
+**Use Lovable**
 
-1.  **Sao chép kho lưu trữ:**
-    ```bash
-    cd smartfood.frontend
-    ```
+Simply visit the [Lovable Project](https://lovable.dev/projects/e9395477-2637-41dd-b56b-169950bf71e9) and start prompting.
 
-2.  **Cài đặt các dependencies:**
-    ```bash
-    npm install
-    ```
+Changes made via Lovable will be committed automatically to this repo.
 
-## Chạy ứng dụng
+**Use your preferred IDE**
 
-Để khởi động máy chủ phát triển, hãy chạy lệnh sau:
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-```bash
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-## Cấu trúc dự án
-<pre lang="markdown">
-smartfood.frontend/
-├── public/          # Chứa các tài sản tĩnh được phục vụ trực tiếp (ví dụ: robots.txt, favicon.ico)
-├── src/             # Chứa mã nguồn chính của ứng dụng
-│   ├── assets/      # Chứa các tài sản tĩnh (ví dụ: hình ảnh, phông chữ) được Vite xử lý
-│   ├── components/  # Chứa các thành phần React có thể tái sử dụng
-│   ├── pages/       # Chứa các thành phần React đại diện cho các trang của ứng dụng
-│   ├── routes/      # Có thể chứa cấu hình định tuyến của ứng dụng
-│   ├── App.css      # Các kiểu CSS toàn cục cho thành phần App
-│   ├── App.jsx      # Thành phần React gốc của ứng dụng
-│   ├── index.css    # Các kiểu CSS toàn cục
-│   └── main.jsx     # Điểm vào chính của ứng dụng React
-├── .gitignore       # Chỉ định các tệp và thư mục Git nên bỏ qua
-├── .eslintrc.js     # Cấu hình ESLint cho việc linting mã JavaScript/JSX
-├── index.html       # Tệp HTML gốc
-├── package-lock.json# Khóa các phiên bản dependencies (cho npm)
-├── package.json     # Chứa thông tin về dự án và các dependencies
-├── README.md        # Tài liệu mô tả dự án (tệp này)
-└── vite.config.js   # Cấu hình Vite
-</pre>
 
+**Edit a file directly in GitHub**
 
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/e9395477-2637-41dd-b56b-169950bf71e9) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
