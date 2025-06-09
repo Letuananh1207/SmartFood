@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -32,10 +31,8 @@ const settingsItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const collapsed = state === "collapsed";
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -50,19 +47,17 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar className="w-64">
       <SidebarContent className="bg-gradient-light">
         <div className="p-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-fresh rounded-xl flex items-center justify-center animate-glow">
               <span className="text-white font-bold">🛒</span>
             </div>
-            {!collapsed && (
-              <div>
-                <h2 className="text-lg font-bold text-green-800">Smart Shopping</h2>
-                <p className="text-sm text-green-600">Quản lý thông minh</p>
-              </div>
-            )}
+            <div>
+              <h2 className="text-lg font-bold text-green-800">Smart Shopping</h2>
+              <p className="text-sm text-green-600">Quản lý thông minh</p>
+            </div>
           </div>
         </div>
 
@@ -75,7 +70,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -93,7 +88,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -111,7 +106,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

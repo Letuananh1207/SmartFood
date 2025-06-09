@@ -1,43 +1,71 @@
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, UserPlus, Crown, Settings, Mail, Phone, Calendar, Trash2, Loader2 } from "lucide-react";
-import { useFamilyMembers } from "@/hooks/useFamilyMembers";
+import { Users, UserPlus, Crown, Settings, Mail, Phone, Calendar, Trash2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Family = () => {
-  const navigate = useNavigate();
-  const { members, loading, addMember, removeMember } = useFamilyMembers();
+  const [familyMembers, setFamilyMembers] = useState([
+    {
+      id: 1,
+      name: "Nguyễn Văn A",
+      email: "vana@email.com",
+      role: "admin",
+      joinDate: "2024-01-15",
+      avatar: "VA",
+      phone: "0901234567",
+      contributions: 15,
+      lastActive: "Hôm nay"
+    },
+    {
+      id: 2,
+      name: "Trần Thị B",
+      email: "thib@email.com",
+      role: "member",
+      joinDate: "2024-01-20",
+      avatar: "TB",
+      phone: "0907654321",
+      contributions: 8,
+      lastActive: "2 giờ trước"
+    },
+    {
+      id: 3,
+      name: "Lê Văn C",
+      email: "vanc@email.com",
+      role: "member",
+      joinDate: "2024-02-01",
+      avatar: "LC",
+      phone: "0912345678",
+      contributions: 3,
+      lastActive: "1 ngày trước"
+    },
+  ]);
+
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
-  const [invitePhone, setInvitePhone] = useState("");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
-  const sendInvite = async () => {
-    if (inviteEmail && inviteName) {
-      await addMember({
-        name: inviteName,
-        email: inviteEmail,
-        phone: invitePhone,
-        role: 'member'
+  const sendInvite = () => {
+    if (inviteEmail) {
+      toast({
+        title: "Đã gửi lời mời",
+        description: `Lời mời đã được gửi đến ${inviteEmail}`,
       });
       setInviteEmail("");
-      setInviteName("");
-      setInvitePhone("");
       setShowInviteForm(false);
     }
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    removeMember(memberId);
-  };
-
-  const handleSettingsClick = () => {
-    navigate('/settings');
+  const removeMember = (memberId: number) => {
+    setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
+    toast({
+      title: "Đã xóa thành viên",
+      description: "Thành viên đã được xóa khỏi nhóm gia đình",
+    });
   };
 
   const roleColors = {
@@ -49,15 +77,6 @@ const Family = () => {
     admin: "Quản trị viên",
     member: "Thành viên"
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Đang tải thông tin gia đình...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -78,7 +97,7 @@ const Family = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Tổng thành viên</p>
-                <p className="text-3xl font-bold text-gray-900">{members.length}</p>
+                <p className="text-3xl font-bold text-gray-900">{familyMembers.length}</p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
             </div>
@@ -91,7 +110,7 @@ const Family = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Quản trị viên</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {members.filter(m => m.role === 'admin').length}
+                  {familyMembers.filter(m => m.role === 'admin').length}
                 </p>
               </div>
               <Crown className="h-8 w-8 text-yellow-600" />
@@ -105,11 +124,7 @@ const Family = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Hoạt động hôm nay</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {members.filter(m => {
-                    const lastActive = new Date(m.last_active);
-                    const today = new Date();
-                    return lastActive.toDateString() === today.toDateString();
-                  }).length}
+                  {familyMembers.filter(m => m.lastActive === 'Hôm nay').length}
                 </p>
               </div>
               <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -138,17 +153,7 @@ const Family = () => {
           {showInviteForm && (
             <CardContent className="pt-4">
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-name">Tên</Label>
-                    <Input
-                      id="invite-name"
-                      type="text"
-                      placeholder="Nguyễn Văn A"
-                      value={inviteName}
-                      onChange={(e) => setInviteName(e.target.value)}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="invite-email">Email</Label>
                     <Input
@@ -159,20 +164,10 @@ const Family = () => {
                       onChange={(e) => setInviteEmail(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="invite-phone">Số điện thoại</Label>
-                    <Input
-                      id="invite-phone"
-                      type="tel"
-                      placeholder="0901234567"
-                      value={invitePhone}
-                      onChange={(e) => setInvitePhone(e.target.value)}
-                    />
-                  </div>
                 </div>
                 <Button onClick={sendInvite} className="w-full">
                   <Mail className="h-4 w-4 mr-2" />
-                  Thêm thành viên
+                  Gửi lời mời
                 </Button>
               </div>
             </CardContent>
@@ -190,7 +185,7 @@ const Family = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {members.map((member) => (
+            {familyMembers.map((member) => (
               <div
                 key={member.id}
                 className="p-6 border rounded-lg bg-white hover:shadow-md transition-shadow"
@@ -199,14 +194,14 @@ const Family = () => {
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary text-white">
-                        {member.avatar_initials || member.name.split(' ').map(n => n[0]).join('')}
+                        {member.avatar}
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-lg">{member.name}</h4>
-                        <Badge variant={roleColors[member.role as keyof typeof roleColors] as any}>
-                          {roleLabels[member.role as keyof typeof roleLabels]}
+                        <Badge variant={roleColors[member.role] as any}>
+                          {roleLabels[member.role]}
                         </Badge>
                         {member.role === 'admin' && (
                           <Crown className="h-4 w-4 text-yellow-600" />
@@ -217,15 +212,13 @@ const Family = () => {
                           <Mail className="h-3 w-3" />
                           {member.email}
                         </span>
-                        {member.phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {member.phone}
-                          </span>
-                        )}
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {member.phone}
+                        </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          Tham gia: {new Date(member.join_date).toLocaleDateString('vi-VN')}
+                          Tham gia: {new Date(member.joinDate).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
                     </div>
@@ -237,24 +230,19 @@ const Family = () => {
                         {member.contributions} đóng góp
                       </div>
                       <div className="text-xs text-gray-500">
-                        Hoạt động: {new Date(member.last_active).toLocaleDateString('vi-VN')}
+                        Hoạt động: {member.lastActive}
                       </div>
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleSettingsClick}
-                        title="Chỉnh sửa thông tin trong Cài đặt"
-                      >
+                      <Button variant="outline" size="sm">
                         <Settings className="h-4 w-4" />
                       </Button>
                       {member.role !== 'admin' && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveMember(member.id)}
+                          onClick={() => removeMember(member.id)}
                           className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -265,6 +253,46 @@ const Family = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Activity Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hoạt động gần đây</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 p-3 bg-green-50 rounded-lg">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-green-600 text-white text-xs">VA</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Nguyễn Văn A đã thêm 5 sản phẩm vào danh sách mua sắm</p>
+                <p className="text-xs text-gray-500">2 giờ trước</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-lg">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-blue-600 text-white text-xs">TB</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Trần Thị B đã cập nhật thực phẩm trong tủ lạnh</p>
+                <p className="text-xs text-gray-500">5 giờ trước</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-3 bg-purple-50 rounded-lg">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-purple-600 text-white text-xs">LC</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Lê Văn C đã tạo kế hoạch bữa ăn tuần mới</p>
+                <p className="text-xs text-gray-500">1 ngày trước</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
