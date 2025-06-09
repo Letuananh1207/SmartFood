@@ -13,9 +13,6 @@ import Recipes from "./pages/Recipes";
 import Reports from "./pages/Reports";
 import Family from "./pages/Family";
 import Settings from "./pages/Settings";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,25 +23,20 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Auth Routes - without Layout */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          
-          {/* Main App Routes - with Layout */}
-          <Route path="/" element={<Layout><Index /></Layout>} />
-          <Route path="/shopping-list" element={<Layout><ShoppingList /></Layout>} />
-          <Route path="/fridge" element={<Layout><Fridge /></Layout>} />
-          <Route path="/meal-plan" element={<Layout><MealPlan /></Layout>} />
-          <Route path="/recipes" element={<Layout><Recipes /></Layout>} />
-          <Route path="/reports" element={<Layout><Reports /></Layout>} />
-          <Route path="/family" element={<Layout><Family /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/shopping-list" element={<ShoppingList />} />
+            <Route path="/fridge" element={<Fridge />} />
+            <Route path="/meal-plan" element={<MealPlan />} />
+            <Route path="/recipes" element={<Recipes />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/family" element={<Family />} />
+            <Route path="/settings" element={<Settings />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

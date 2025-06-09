@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,39 +10,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Plus, Refrigerator, AlertTriangle, Calendar as CalendarIcon, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { toast } from "@/hooks/use-toast";
+import { useFridgeItems } from "@/hooks/useFridgeItems";
 
 const Fridge = () => {
-  const [items, setItems] = useState([
-    { 
-      id: 1, 
-      name: "Cà chua", 
-      category: "Rau củ", 
-      quantity: "500g", 
-      location: "Ngăn rau củ",
-      expiry: new Date("2024-06-08"),
-      addedDate: new Date("2024-06-03")
-    },
-    { 
-      id: 2, 
-      name: "Thịt bò", 
-      category: "Thịt cá", 
-      quantity: "300g", 
-      location: "Ngăn đông",
-      expiry: new Date("2024-06-15"),
-      addedDate: new Date("2024-06-01")
-    },
-    { 
-      id: 3, 
-      name: "Sữa tươi", 
-      category: "Sữa & trứng", 
-      quantity: "1 lít", 
-      location: "Cửa tủ lạnh",
-      expiry: new Date("2024-06-05"),
-      addedDate: new Date("2024-06-02")
-    },
-  ]);
-
+  const { items, loading, addItem, deleteItem } = useFridgeItems();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [newItem, setNewItem] = useState({
@@ -57,39 +28,28 @@ const Fridge = () => {
   const categories = ["Rau củ", "Thịt cá", "Sữa & trứng", "Đồ khô", "Gia vị", "Đồ uống", "Đồ đông lạnh", "Khác"];
   const locations = ["Ngăn rau củ", "Ngăn đông", "Ngăn mát", "Cửa tủ lạnh", "Ngăn khô"];
 
-  const addItem = () => {
+  const handleAddItem = async () => {
     if (newItem.name && newItem.category && newItem.quantity && newItem.location && newItem.expiry) {
-      const item = {
-        id: Date.now(),
-        ...newItem,
-        expiry: newItem.expiry,
-        addedDate: new Date(),
-      };
-      setItems([...items, item]);
-      setNewItem({ name: "", category: "", quantity: "", location: "", expiry: undefined });
-      toast({
-        title: "Đã thêm thực phẩm",
-        description: `${newItem.name} đã được thêm vào tủ lạnh`,
+      await addItem({
+        name: newItem.name,
+        category: newItem.category,
+        quantity: newItem.quantity,
+        location: newItem.location,
+        expiry_date: newItem.expiry.toISOString().split('T')[0],
       });
+      setNewItem({ name: "", category: "", quantity: "", location: "", expiry: undefined });
     }
   };
 
-  const deleteItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
-    toast({
-      title: "Đã xóa thực phẩm",
-      description: "Thực phẩm đã được xóa khỏi tủ lạnh",
-    });
-  };
-
-  const getDaysUntilExpiry = (expiryDate: Date) => {
+  const getDaysUntilExpiry = (expiryDate: string) => {
     const today = new Date();
-    const diffTime = expiryDate.getTime() - today.getTime();
+    const expiry = new Date(expiryDate);
+    const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
-  const getExpiryStatus = (expiryDate: Date) => {
+  const getExpiryStatus = (expiryDate: string) => {
     const days = getDaysUntilExpiry(expiryDate);
     if (days < 0) return { status: "expired", label: "Đã hết hạn", color: "destructive" };
     if (days <= 3) return { status: "warning", label: `${days} ngày`, color: "destructive" };
@@ -103,8 +63,19 @@ const Fridge = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const expiringItems = items.filter(item => getDaysUntilExpiry(item.expiry) <= 3);
+  const expiringItems = items.filter(item => getDaysUntilExpiry(item.expiry_date) <= 3);
   const totalItems = items.length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Refrigerator className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-gray-500">Đang tải dữ liệu tủ lạnh...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -239,7 +210,7 @@ const Fridge = () => {
               </Popover>
             </div>
           </div>
-          <Button onClick={addItem} className="w-full">
+          <Button onClick={handleAddItem} className="w-full">
             <Plus className="h-4 w-4 mr-2" />
             Thêm vào tủ lạnh
           </Button>
@@ -296,7 +267,7 @@ const Fridge = () => {
               </div>
             ) : (
               filteredItems.map((item) => {
-                const expiryStatus = getExpiryStatus(item.expiry);
+                const expiryStatus = getExpiryStatus(item.expiry_date);
                 return (
                   <div
                     key={item.id}
@@ -321,7 +292,7 @@ const Fridge = () => {
                             <span className="font-medium">Vị trí:</span> {item.location}
                           </div>
                           <div>
-                            <span className="font-medium">Hết hạn:</span> {format(item.expiry, "dd/MM/yyyy", { locale: vi })}
+                            <span className="font-medium">Hết hạn:</span> {format(new Date(item.expiry_date), "dd/MM/yyyy", { locale: vi })}
                           </div>
                         </div>
                       </div>
