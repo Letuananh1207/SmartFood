@@ -3,20 +3,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Refrigerator, Calendar, ChefHat, AlertTriangle, TrendingUp, LogIn, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useGroceryItems } from "@/hooks/useGroceryItems";
+import { useFridgeItems } from "@/hooks/useFridgeItems";
+import { useMealPlans } from "@/hooks/useMealPlans";
+import { useDishes } from "@/hooks/useDishes";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const { items: groceryItems } = useGroceryItems();
+  const { items: fridgeItems } = useFridgeItems();
+  const { mealPlans } = useMealPlans();
+  const { dishes } = useDishes();
+  
+  const [expiringItems, setExpiringItems] = useState(0);
+
+  useEffect(() => {
+    // Calculate items expiring in the next 3 days
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+    
+    const expiring = fridgeItems.filter(item => {
+      const expiryDate = new Date(item.expiry_date);
+      return expiryDate <= threeDaysFromNow && expiryDate >= new Date();
+    }).length;
+    
+    setExpiringItems(expiring);
+  }, [fridgeItems]);
+
+  // Get current week meal plans
+  const currentWeek = new Date();
+  const weekStart = new Date(currentWeek.setDate(currentWeek.getDate() - currentWeek.getDay()));
+  const weekEnd = new Date(currentWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 6));
+  
+  const thisWeekMeals = mealPlans.filter(plan => {
+    const mealDate = new Date(plan.meal_date);
+    return mealDate >= weekStart && mealDate <= weekEnd;
+  }).length;
+
+  const pendingGroceryItems = groceryItems.filter(item => !item.completed).length;
+
   const quickStats = [
     {
       title: "Sản phẩm sắp hết hạn",
-      value: "3",
+      value: expiringItems.toString(),
       description: "Trong 3 ngày tới",
       icon: AlertTriangle,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      color: expiringItems > 0 ? "text-orange-600" : "text-green-600",
+      bgColor: expiringItems > 0 ? "bg-orange-50" : "bg-green-50",
     },
     {
       title: "Danh sách mua sắm",
-      value: "12",
+      value: pendingGroceryItems.toString(),
       description: "Sản phẩm cần mua",
       icon: ShoppingCart,
       color: "text-blue-600",
@@ -24,7 +61,7 @@ const Index = () => {
     },
     {
       title: "Thực phẩm trong tủ lạnh",
-      value: "25",
+      value: fridgeItems.length.toString(),
       description: "Loại thực phẩm",
       icon: Refrigerator,
       color: "text-green-600",
@@ -32,7 +69,7 @@ const Index = () => {
     },
     {
       title: "Bữa ăn tuần này",
-      value: "7",
+      value: thisWeekMeals.toString(),
       description: "Món ăn đã lên kế hoạch",
       icon: Calendar,
       color: "text-purple-600",
@@ -71,15 +108,42 @@ const Index = () => {
     },
   ];
 
+  // Get recent activity based on real data
+  const recentActivity = [
+    {
+      message: `Đã thêm ${groceryItems.filter(item => {
+        const itemDate = new Date(item.created_at);
+        const today = new Date();
+        return itemDate.toDateString() === today.toDateString();
+      }).length} sản phẩm vào danh sách mua sắm`,
+      time: "Hôm nay",
+      color: "green"
+    },
+    {
+      message: `Cập nhật ${fridgeItems.filter(item => {
+        const itemDate = new Date(item.updated_at);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return itemDate.toDateString() === yesterday.toDateString();
+      }).length} thực phẩm trong tủ lạnh`,
+      time: "Hôm qua",
+      color: "blue"
+    },
+    {
+      message: `Có ${dishes.length} công thức nấu ăn trong hệ thống`,
+      time: "Tổng cộng",
+      color: "purple"
+    }
+  ];
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-gray-900">Chào mừng đến với Smart Shopping! 👋</h1>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-gray-900">Chào mừng trở lại! 👋</h1>
         <p className="text-lg text-gray-600">
-          Hệ thống quản lý mua sắm và bữa ăn thông minh cho gia đình bạn
+          Hôm nay là một ngày tuyệt vời để quản lý bữa ăn gia đình bạn
         </p>
-        
         {/* Auth CTA */}
         <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
           <CardContent className="p-6">
@@ -165,27 +229,15 @@ const Index = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center gap-4 p-3 bg-green-50 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Đã thêm 5 sản phẩm vào danh sách mua sắm</p>
-                <p className="text-xs text-gray-500">2 giờ trước</p>
+            {recentActivity.map((activity, index) => (
+              <div key={index} className={`flex items-center gap-4 p-3 bg-${activity.color}-50 rounded-lg`}>
+                <div className={`w-2 h-2 bg-${activity.color}-500 rounded-full`}></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{activity.message}</p>
+                  <p className="text-xs text-gray-500">{activity.time}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Cập nhật thực phẩm trong tủ lạnh</p>
-                <p className="text-xs text-gray-500">5 giờ trước</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-3 bg-purple-50 rounded-lg">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Tạo kế hoạch bữa ăn tuần mới</p>
-                <p className="text-xs text-gray-500">1 ngày trước</p>
-              </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -1,231 +1,235 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { TrendingUp, DollarSign, ShoppingCart, AlertTriangle } from "lucide-react";
+import { useGroceryItems } from "@/hooks/useGroceryItems";
+import { useFridgeItems } from "@/hooks/useFridgeItems";
+import { usePurchaseHistory } from "@/hooks/usePurchaseHistory";
 
 const Reports = () => {
-  const monthlySpending = [
-    { month: "T1", amount: 2500000 },
-    { month: "T2", amount: 2800000 },
-    { month: "T3", amount: 2300000 },
-    { month: "T4", amount: 2900000 },
-    { month: "T5", amount: 3200000 },
-    { month: "T6", amount: 2750000 },
-  ];
+  const { items: groceryItems } = useGroceryItems();
+  const { items: fridgeItems } = useFridgeItems();
+  const { items: purchaseHistory } = usePurchaseHistory();
 
-  const categorySpending = [
-    { name: "Rau củ", value: 800000, color: "#22c55e" },
-    { name: "Thịt cá", value: 1200000, color: "#ef4444" },
-    { name: "Đồ khô", value: 600000, color: "#f59e0b" },
-    { name: "Sữa & trứng", value: 400000, color: "#3b82f6" },
-    { name: "Gia vị", value: 200000, color: "#8b5cf6" },
-    { name: "Khác", value: 300000, color: "#6b7280" },
-  ];
+  // Calculate total spending from purchase history
+  const totalSpending = purchaseHistory.reduce((sum, item) => {
+    return sum + (item.price || 0);
+  }, 0);
 
-  const wasteData = [
-    { week: "Tuần 1", wasted: 50000 },
-    { week: "Tuần 2", wasted: 30000 },
-    { week: "Tuần 3", wasted: 70000 },
-    { week: "Tuần 4", wasted: 40000 },
-  ];
+  // Calculate spending by category from purchase history
+  const spendingByCategory = purchaseHistory.reduce((acc: any, item) => {
+    const category = item.item_type;
+    const price = item.price || 0;
+    acc[category] = (acc[category] || 0) + price;
+    return acc;
+  }, {});
+
+  const categoryData = Object.entries(spendingByCategory).map(([category, amount]) => ({
+    category,
+    amount: amount as number
+  }));
+
+  // Calculate monthly spending and waste from real data
+  const getMonthlyData = () => {
+    const monthlyStats: { [key: string]: { spending: number; waste: number } } = {};
+    
+    // Initialize months
+    for (let i = 0; i < 6; i++) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = `Tháng ${date.getMonth() + 1}`;
+      monthlyStats[monthKey] = { spending: 0, waste: 0 };
+    }
+
+    // Calculate spending from purchase history
+    purchaseHistory.forEach(item => {
+      const purchaseDate = new Date(item.purchased_at);
+      const monthKey = `Tháng ${purchaseDate.getMonth() + 1}`;
+      if (monthlyStats[monthKey]) {
+        monthlyStats[monthKey].spending += item.price || 0;
+      }
+    });
+
+    // Calculate waste from expired fridge items
+    fridgeItems.forEach(item => {
+      const expiryDate = new Date(item.expiry_date);
+      const today = new Date();
+      if (expiryDate < today) {
+        const monthKey = `Tháng ${expiryDate.getMonth() + 1}`;
+        if (monthlyStats[monthKey]) {
+          // Estimate waste value - could be improved with actual purchase prices
+          monthlyStats[monthKey].waste += 25000; // Rough estimate
+        }
+      }
+    });
+
+    return Object.entries(monthlyStats)
+      .map(([month, data]) => ({
+        month,
+        spending: data.spending,
+        waste: data.waste
+      }))
+      .reverse(); // Show chronologically
+  };
+
+  const monthlyData = getMonthlyData();
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  // Calculate actual waste from expired items
+  const actualWaste = fridgeItems.filter(item => {
+    const expiryDate = new Date(item.expiry_date);
+    const today = new Date();
+    return expiryDate < today;
+  }).length * 25000; // Estimate per expired item
+
+  // Calculate potential savings
+  const estimatedSavings = totalSpending * 0.15; // Estimate 15% savings from better planning
+
+  // Count completed grocery items
+  const completedItems = groceryItems.filter(item => item.completed);
 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          Báo cáo & Thống kê
+          <TrendingUp className="h-8 w-8 text-primary" />
+          Báo cáo và thống kê
         </h1>
         <p className="text-lg text-gray-600">
-          Phân tích chi tiêu và xu hướng tiêu dùng thực phẩm của gia đình
+          Phân tích chi tiêu thực phẩm và hiệu quả quản lý
         </p>
       </div>
 
-      {/* Summary Cards */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Chi tiêu tháng này</p>
-                <p className="text-2xl font-bold text-gray-900">2.750.000đ</p>
-                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                  <TrendingDown className="h-3 w-3" />
-                  -5% so với tháng trước
-                </p>
+                <p className="text-sm font-medium text-gray-600">Tổng chi tiêu</p>
+                <p className="text-3xl font-bold text-gray-900">{totalSpending.toLocaleString()}đ</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
-        
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Lãng phí tháng này</p>
-                <p className="text-2xl font-bold text-gray-900">190.000đ</p>
-                <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3" />
-                  +12% so với tháng trước
-                </p>
+                <p className="text-sm font-medium text-gray-600">Số sản phẩm đã mua</p>
+                <p className="text-3xl font-bold text-gray-900">{purchaseHistory.length}</p>
               </div>
-              <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-red-600">⚠️</span>
-              </div>
+              <ShoppingCart className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Món ăn đã nấu</p>
-                <p className="text-2xl font-bold text-gray-900">28</p>
-                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3" />
-                  +3 món so với tháng trước
-                </p>
+                <p className="text-sm font-medium text-gray-600">Ước tính lãng phí</p>
+                <p className="text-3xl font-bold text-red-600">{actualWaste.toLocaleString()}đ</p>
               </div>
-              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600">🍽️</span>
-              </div>
+              <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Tiết kiệm dự kiến</p>
-                <p className="text-2xl font-bold text-gray-900">350.000đ</p>
-                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Nhờ kế hoạch bữa ăn
-                </p>
+                <p className="text-sm font-medium text-gray-600">Tiết kiệm ước tính</p>
+                <p className="text-3xl font-bold text-green-600">{estimatedSavings.toLocaleString()}đ</p>
               </div>
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600">💰</span>
-              </div>
+              <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Spending Chart */}
+        {/* Monthly Spending Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Chi tiêu theo tháng</CardTitle>
-            <CardDescription>
-              Xu hướng chi tiêu thực phẩm 6 tháng gần đây
-            </CardDescription>
+            <CardTitle>Xu hướng chi tiêu theo tháng</CardTitle>
+            <CardDescription>So sánh chi tiêu và lãng phí qua các tháng</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlySpending}>
+              <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip 
-                  formatter={(value) => [`${(value as number).toLocaleString('vi-VN')}đ`, 'Chi tiêu']}
-                />
-                <Bar dataKey="amount" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Tooltip formatter={(value) => `${Number(value).toLocaleString()}đ`} />
+                <Legend />
+                <Bar dataKey="spending" fill="#8b5cf6" name="Chi tiêu" />
+                <Bar dataKey="waste" fill="#ef4444" name="Lãng phí" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Category Spending Chart */}
+        {/* Spending by Category */}
         <Card>
           <CardHeader>
             <CardTitle>Chi tiêu theo danh mục</CardTitle>
-            <CardDescription>
-              Phân bổ chi tiêu tháng này theo loại thực phẩm
-            </CardDescription>
+            <CardDescription>Phân bổ chi tiêu cho các loại thực phẩm</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={categorySpending}
+                  data={categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
+                  labelLine={false}
+                  label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="amount"
                 >
-                  {categorySpending.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  formatter={(value) => [`${(value as number).toLocaleString('vi-VN')}đ`, 'Chi tiêu']}
-                />
+                <Tooltip formatter={(value) => `${Number(value).toLocaleString()}đ`} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Waste Analysis */}
+      {/* Insights */}
       <Card>
         <CardHeader>
-          <CardTitle>Phân tích lãng phí thực phẩm</CardTitle>
-          <CardDescription>
-            Theo dõi thực phẩm bị lãng phí theo tuần
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={wasteData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="week" />
-              <YAxis />
-              <Tooltip 
-                formatter={(value) => [`${(value as number).toLocaleString('vi-VN')}đ`, 'Lãng phí']}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="wasted" 
-                stroke="#ef4444" 
-                strokeWidth={3}
-                dot={{ fill: '#ef4444', strokeWidth: 2, r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Category Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chi tiết chi tiêu theo danh mục</CardTitle>
+          <CardTitle>Nhận xét và đề xuất</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {categorySpending.map((category, index) => {
-              const percentage = ((category.value / categorySpending.reduce((total, cat) => total + cat.value, 0)) * 100).toFixed(1);
-              return (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    ></div>
-                    <span className="font-medium">{category.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">{category.value.toLocaleString('vi-VN')}đ</div>
-                    <div className="text-sm text-gray-600">{percentage}%</div>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-900">💡 Tiết kiệm chi phí</h4>
+              <p className="text-blue-800 mt-2">
+                Bạn có thể tiết kiệm thêm {estimatedSavings.toLocaleString()}đ bằng cách lên kế hoạch bữa ăn chi tiết hơn.
+              </p>
+            </div>
+            
+            <div className="p-4 bg-orange-50 rounded-lg">
+              <h4 className="font-semibold text-orange-900">⚠️ Giảm lãng phí</h4>
+              <p className="text-orange-800 mt-2">
+                Hiện có {fridgeItems.filter(item => new Date(item.expiry_date) < new Date()).length} sản phẩm đã hết hạn trong tủ lạnh. 
+                Kiểm tra thường xuyên để giảm lãng phí.
+              </p>
+            </div>
+
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h4 className="font-semibold text-green-900">📊 Theo dõi chi tiêu</h4>
+              <p className="text-green-800 mt-2">
+                Tổng cộng đã mua {purchaseHistory.length} sản phẩm với tổng giá trị {totalSpending.toLocaleString()}đ.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

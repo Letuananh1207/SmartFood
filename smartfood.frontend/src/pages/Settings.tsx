@@ -6,22 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Bell, User, Save } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, User, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    // Basic user info
-    name: "Nguyễn Văn A",
-    email: "vana@email.com",
-    
-    // Simple notifications
+    // Notification settings
     expireNotifications: true,
     shoppingReminders: true,
+    mealPlanNotifications: false,
+    emailDigest: true,
     
-    // Basic preferences
+    // Display settings
     language: "vi",
     theme: "light",
+    currency: "VND",
+    
+    // Privacy settings
+    profilePublic: false,
+    shareData: true,
+    
+    // Account settings
+    name: "Nguyễn Văn A",
+    email: "vana@email.com",
+    phone: "0901234567",
   });
 
   const updateSetting = (key: string, value: any) => {
@@ -55,7 +63,7 @@ const Settings = () => {
             Thông tin tài khoản
           </CardTitle>
           <CardDescription>
-            Quản lý thông tin cá nhân của bạn
+            Quản lý thông tin cá nhân và bảo mật tài khoản
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -77,6 +85,23 @@ const Settings = () => {
                 onChange={(e) => updateSetting('email', e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Số điện thoại</Label>
+              <Input
+                id="phone"
+                value={settings.phone}
+                onChange={(e) => updateSetting('phone', e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t">
+            <Button variant="outline" className="mr-4">
+              Đổi mật khẩu
+            </Button>
+            <Button variant="outline">
+              Xác thực 2 bước
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -121,6 +146,34 @@ const Settings = () => {
                 onCheckedChange={(checked) => updateSetting('shoppingReminders', checked)}
               />
             </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="meal-plan-notifications">Kế hoạch bữa ăn</Label>
+                <p className="text-sm text-gray-600">
+                  Nhận thông báo về kế hoạch bữa ăn
+                </p>
+              </div>
+              <Switch
+                id="meal-plan-notifications"
+                checked={settings.mealPlanNotifications}
+                onCheckedChange={(checked) => updateSetting('mealPlanNotifications', checked)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="email-digest">Báo cáo email hàng tuần</Label>
+                <p className="text-sm text-gray-600">
+                  Nhận tóm tắt hoạt động qua email
+                </p>
+              </div>
+              <Switch
+                id="email-digest"
+                checked={settings.emailDigest}
+                onCheckedChange={(checked) => updateSetting('emailDigest', checked)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -128,13 +181,16 @@ const Settings = () => {
       {/* Display Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Giao diện</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Giao diện & Hiển thị
+          </CardTitle>
           <CardDescription>
             Tùy chỉnh giao diện và ngôn ngữ hiển thị
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Ngôn ngữ</Label>
               <Select value={settings.language} onValueChange={(value) => updateSetting('language', value)}>
@@ -157,9 +213,93 @@ const Settings = () => {
                 <SelectContent>
                   <SelectItem value="light">Sáng</SelectItem>
                   <SelectItem value="dark">Tối</SelectItem>
+                  <SelectItem value="auto">Tự động</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="currency">Đơn vị tiền tệ</Label>
+              <Select value={settings.currency} onValueChange={(value) => updateSetting('currency', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VND">VND (₫)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Privacy Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Quyền riêng tư
+          </CardTitle>
+          <CardDescription>
+            Quản lý quyền riêng tư và chia sẻ dữ liệu
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="profile-public">Hồ sơ công khai</Label>
+                <p className="text-sm text-gray-600">
+                  Cho phép người khác xem hồ sơ của bạn
+                </p>
+              </div>
+              <Switch
+                id="profile-public"
+                checked={settings.profilePublic}
+                onCheckedChange={(checked) => updateSetting('profilePublic', checked)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="share-data">Chia sẻ dữ liệu phân tích</Label>
+                <p className="text-sm text-gray-600">
+                  Giúp cải thiện dịch vụ bằng dữ liệu ẩn danh
+                </p>
+              </div>
+              <Switch
+                id="share-data"
+                checked={settings.shareData}
+                onCheckedChange={(checked) => updateSetting('shareData', checked)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quản lý dữ liệu</CardTitle>
+          <CardDescription>
+            Sao lưu, khôi phục và xóa dữ liệu
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <Button variant="outline">
+              Xuất dữ liệu
+            </Button>
+            <Button variant="outline">
+              Sao lưu dữ liệu
+            </Button>
+            <Button variant="outline">
+              Khôi phục dữ liệu
+            </Button>
+            <Button variant="destructive">
+              Xóa tất cả dữ liệu
+            </Button>
           </div>
         </CardContent>
       </Card>
