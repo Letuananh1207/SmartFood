@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Users, Plus, ChefHat, Trash2, Edit, ShoppingCart, Copy, Download, Loader2 } from "lucide-react";
+import { Calendar, Clock, Users, Plus, ChefHat, Trash2, Edit, ShoppingCart, Copy, Download, Loader2, Eye } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Đảm bảo import Avatar
 // Remove Dialog, DialogContent, etc. as they are now in SelectRecipeDialog
 // Remove Input, ScrollArea, Label, Textarea, Select as they are now in SelectRecipeDialog
 
 // Import component SelectRecipeDialog mới
 import SelectRecipeDialog from "./SelectRecipeDialog"; // Điều chỉnh đường dẫn nếu cần
+import RecipeDetailDialog from "../components/RecipeDetailDialog"; // Import RecipeDetailDialog
 
 // Import các hàm và interface từ mealPlanService.ts
 import {
@@ -46,6 +47,10 @@ const MealPlan = () => {
   const [currentMealType, setCurrentMealType] = useState<'Breakfast' | 'Lunch' | 'Dinner' | 'Snack' | null>(null);
   const [currentMealEntryToEdit, setCurrentMealEntryToEdit] = useState<MealEntry | null>(null);
   const [notesForMeal, setNotesForMeal] = useState("");
+
+  // States cho chi tiết công thức
+  const [showRecipeDetailDialog, setShowRecipeDetailDialog] = useState(false);
+  const [selectedRecipeDetail, setSelectedRecipeDetail] = useState<RecipeData | null>(null);
 
   const weekDays = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
   const mealTypes = [
@@ -85,6 +90,11 @@ const MealPlan = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewRecipeDetail = (recipe: RecipeData) => {
+    setSelectedRecipeDetail(recipe);
+    setShowRecipeDetailDialog(true);
   };
 
   const handleCreateMealPlan = async (mealPlanData: NewMealPlanData) => {
@@ -483,59 +493,81 @@ const MealPlan = () => {
 
               return (
                 <Card key={day} className="min-h-[280px] flex flex-col">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">{day}</CardTitle>
-                    <CardDescription className="text-xs">
-                      {dayDate.getDate()}/{dayDate.getMonth() + 1}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 flex-grow">
-                    {mealTypes.map((mealType) => {
-                      const meal = getMealForDay(dayIndex, mealType.key);
+    <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">{day}</CardTitle>
+        <CardDescription className="text-xs">
+            {dayDate.getDate()}/{dayDate.getMonth() + 1}
+        </CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-2 flex-grow">
+        {mealTypes.map((mealType) => {
+            const meal = getMealForDay(dayIndex, mealType.key);
 
-                      return (
-                        <div key={mealType.key}>
-                          <div className="flex items-center gap-1 mb-1">
-                            <span className="text-xs font-medium">{mealType.label}</span>
-                            <span className="text-xs">{mealType.icon}</span>
-                          </div>
-                          {meal ? (
-                            <div className="p-2 bg-gray-50 rounded text-xs relative group">
-                              <p className="font-medium truncate">
+            return (
+                <div key={mealType.key}>
+                    <div className="flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium">{mealType.label}</span>
+                        <span className="text-xs">{mealType.icon}</span>
+                    </div>
+                    {meal ? (
+                        <div className="p-2 bg-gray-50 rounded text-xs relative group">
+                            <p className="font-medium truncate">
                                 {typeof meal.recipe === 'object' ? meal.recipe.name : "Đang tải..."}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1 text-gray-500">
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 text-gray-500">
                                 <span><Clock className="inline-block h-3 w-3 mr-1" /> {typeof meal.recipe === 'object' ? meal.recipe.cookTime || 0 : 0}</span>
                                 <span><Users className="inline-block h-3 w-3 mr-1" /> {typeof meal.recipe === 'object' ? meal.recipe.servings || 1 : 1} người</span>
-                              </div>
-                              {meal.notes && (
-                                <p className="text-gray-600 text-xs mt-1 italic truncate">Ghi chú: {meal.notes}</p>
-                              )}
-                              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenSelectRecipeDialog(dayIndex, mealType.key, meal)}>
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => meal._id && handleDeleteMealEntry(meal._id)}>
-                                  <Trash2 className="h-3 w-3 text-red-500" />
-                                </Button>
-                              </div>
                             </div>
-                          ) : (
+                            {meal.notes && (
+                                <p className="text-gray-600 text-xs mt-1 italic truncate">Ghi chú: {meal.notes}</p>
+                            )}
+
+                            {/* Nút xem chi tiết (Eye) luôn hiển thị ở góc trên bên phải */}
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full h-8 text-xs border border-dashed"
-                              onClick={() => handleOpenSelectRecipeDialog(dayIndex, mealType.key)}
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6" // Điều chỉnh kích thước nút và vị trí
+                                onClick={() => handleViewRecipeDetail(meal.recipe)}
                             >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Thêm
+                                <Eye className="h-3 w-3" /> {/* Icon xem chi tiết */}
                             </Button>
-                          )}
+
+                            {/* Các nút chỉnh sửa (Edit) và xóa (Trash2) hiển thị khi hover, nằm bên trái nút Eye */}
+                            <div className="absolute top-1 right-8 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6" // Điều chỉnh kích thước nút
+                                    onClick={() => handleOpenSelectRecipeDialog(dayIndex, mealType.key, meal)}
+                                >
+                                    <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6" // Điều chỉnh kích thước nút
+                                    onClick={() => meal._id && handleDeleteMealEntry(meal._id)}
+                                >
+                                    <Trash2 className="h-3 w-3 text-red-500" />
+                                </Button>
+                            </div>
                         </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full h-8 text-xs border border-dashed"
+                            onClick={() => handleOpenSelectRecipeDialog(dayIndex, mealType.key)}
+                        >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Thêm
+                        </Button>
+                    )}
+                </div>
+            );
+        })}
+    </CardContent>
+</Card>
               );
             })}
           </div>
@@ -579,6 +611,15 @@ const MealPlan = () => {
         currentMealEntryToEdit={currentMealEntryToEdit}
         onSave={handleAddOrUpdateMealEntry}
       />
+
+      {selectedRecipeDetail && (
+        <RecipeDetailDialog
+          showRecipeDetailDialog={showRecipeDetailDialog}
+          setShowRecipeDetailDialog={setShowRecipeDetailDialog}
+          selectedRecipeDetail={selectedRecipeDetail}
+        />
+      )}
+
     </div>
   );
 };
