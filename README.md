@@ -34,3 +34,15 @@ Sau khi clone xong, trong thư mục dự án sẽ có 2 thư mục chính:
 - smartfood.frontend — chứa mã nguồn giao diện người dùng (React + Vite)
 - smartfood.backend — chứa mã nguồn server (Express.js)
 </pre>
+
+## Tài khoản Đăng nhập Thử nghiệm
+
+Bạn có thể sử dụng các tài khoản sau để đăng nhập và trải nghiệm hệ thống:
+
+| Vai trò    | Tên đăng nhập       | Mật khẩu  |
+|------------|----------------------|-----------|
+| Người dùng | `me@gmail.com`       | `123456`  |
+| Người dùng | `bo@gmail.com`       | `123456`  |
+
+> ⚠️ **Lưu ý:** Đây là các tài khoản dùng thử, chỉ phục vụ mục đích trải nghiệm hệ thống.  
+> Vui lòng **không thay đổi mật khẩu hoặc xóa dữ liệu** nếu không thực sự cần thiết.
