@@ -1,12 +1,12 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, ShoppingCart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import axios from "axios"; // Import axios
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,18 +14,56 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const navigate = useNavigate(); // Khởi tạo useNavigate
+
+  // Base URL của API backend của bạn
+  const API_URL = "http://localhost:5000/api/auth/login"; 
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Đăng nhập thành công!",
-        description: "Chào mừng bạn trở lại Smart Shopping",
+
+    try {
+      const response = await axios.post(API_URL, {
+        email,
+        password,
       });
-    }, 1000);
+
+      // Kiểm tra xem phản hồi có chứa token không
+      if (response.data && response.data.token) {
+        // Lưu token vào localStorage (hoặc sessionStorage)
+        // Đây là cách thông thường để lưu JWT client-side
+        localStorage.setItem("userToken", response.data.token);
+        localStorage.setItem("userInfo", JSON.stringify(response.data)); // Lưu thêm thông tin người dùng
+
+        toast({
+          title: "Đăng nhập thành công!",
+          description: "Chào mừng bạn trở lại Smart Shopping",
+          variant: "success", // Nếu bạn có variant success
+        });
+
+        // Chuyển hướng người dùng đến trang dashboard hoặc trang chính
+        navigate("/"); // Thay đổi thành route mong muốn của bạn
+      } else {
+        // Xử lý trường hợp không có token trong phản hồi (có thể xảy ra nếu API có lỗi logic)
+        toast({
+          title: "Lỗi đăng nhập",
+          description: "Không nhận được token từ server. Vui lòng thử lại.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      // Xử lý lỗi từ API
+      const errorMessage = error.response?.data?.message || "Đã xảy ra lỗi không xác định.";
+      toast({
+        title: "Đăng nhập thất bại",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,7 +104,7 @@ const Login = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Mật khẩu</Label>
                 <div className="relative">
@@ -95,13 +133,13 @@ const Login = () => {
                   <input type="checkbox" className="rounded" />
                   <span>Ghi nhớ đăng nhập</span>
                 </label>
-                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link to="/forgot-password" className="text-primary hover:underline text-sm">
                   Quên mật khẩu?
                 </Link>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-fresh hover:opacity-90 transition-opacity"
                 disabled={isLoading}
               >

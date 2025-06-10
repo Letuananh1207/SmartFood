@@ -19,7 +19,6 @@ const menuItems = [
   { title: "Quản lý tủ lạnh", url: "/fridge", icon: Refrigerator },
   { title: "Kế hoạch bữa ăn", url: "/meal-plan", icon: Calendar },
   { title: "Gợi ý món ăn", url: "/recipes", icon: ChefHat },
-  { title: "Báo cáo", url: "/reports", icon: BarChart3 },
 ];
 
 const familyItems = [
@@ -84,24 +83,6 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {familyItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClassName(item.url)}>
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Khác</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>

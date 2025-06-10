@@ -1,18 +1,18 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, User, ShoppingCart, Phone } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ShoppingCart } from "lucide-react"; // Bỏ Phone icon
 import { toast } from "@/hooks/use-toast";
+import axios from "axios";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    fullName: "",
+    username: "", // Đã đổi từ fullName thành username
     email: "",
-    phone: "",
+    // phone: "", // Loại bỏ trường phone vì không có trong User model hiện tại
     password: "",
     confirmPassword: ""
   });
@@ -20,32 +20,66 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const navigate = useNavigate();
+
+  const API_URL = "http://localhost:5000/api/auth/register";
+
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Lỗi",
-        description: "Mật khẩu xác nhận không khớp",
+        description: "Mật khẩu xác nhận không khớp.",
         variant: "destructive"
       });
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Đăng ký thành công!",
-        description: "Tài khoản của bạn đã được tạo. Hãy đăng nhập để tiếp tục.",
+
+    try {
+      const response = await axios.post(API_URL, {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        // Không gửi trường 'phone' nếu nó không có trong model
       });
-    }, 1000);
+
+      if (response.data && response.data.token) {
+        localStorage.setItem("userToken", response.data.token);
+        localStorage.setItem("userInfo", JSON.stringify(response.data));
+
+        toast({
+          title: "Đăng ký thành công!",
+          description: "Tài khoản của bạn đã được tạo và tự động đăng nhập. Chào mừng bạn đến với Smart Shopping.",
+          variant: "success",
+        });
+
+        navigate("/");
+      } else {
+        toast({
+          title: "Đăng ký thành công!",
+          description: "Tài khoản của bạn đã được tạo. Vui lòng đăng nhập để tiếp tục.",
+          variant: "success",
+        });
+        navigate("/login");
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Đã xảy ra lỗi không xác định khi đăng ký.";
+      toast({
+        title: "Đăng ký thất bại",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      console.error("Register error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -72,16 +106,16 @@ const Register = () => {
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Họ và tên</Label>
+                <Label htmlFor="username">Tên người dùng</Label> {/* Thay đổi Label */}
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="fullName"
+                    id="username" // Thay đổi ID
                     type="text"
-                    placeholder="Nhập họ và tên"
+                    placeholder="Nhập tên người dùng" // Thay đổi placeholder
                     className="pl-10"
-                    value={formData.fullName}
-                    onChange={handleChange("fullName")}
+                    value={formData.username}
+                    onChange={handleChange("username")}
                     required
                   />
                 </div>
@@ -103,7 +137,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Loại bỏ phần nhập số điện thoại */}
+              {/* <div className="space-y-2">
                 <Label htmlFor="phone">Số điện thoại</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -117,7 +152,7 @@ const Register = () => {
                     required
                   />
                 </div>
-              </div>
+              </div> */}
               
               <div className="space-y-2">
                 <Label htmlFor="password">Mật khẩu</Label>
@@ -179,8 +214,8 @@ const Register = () => {
                 </label>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-fresh hover:opacity-90 transition-opacity"
                 disabled={isLoading}
               >

@@ -7,6 +7,10 @@ const recipeSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    description: {
+      type: String,
+      required: true,
+    },
     ingredients: [
       {
         name: { type: String, required: true },
@@ -19,20 +23,36 @@ const recipeSchema = mongoose.Schema(
       required: true,
     },
     category: {
-      type: String, // vd: món chính, món phụ, tráng miệng
+      type: String,
+      required: true,
+      default: 'Món chính'
     },
-    isFavorite: {
-      type: Boolean,
-      default: false,
+    cookTime: {
+      type: String,
+      required: true,
     },
-    isPopular: {
-      type: Boolean,
-      default: false,
+    servings: {
+      type: Number,
+      required: true,
     },
-    user: { // Người dùng có thể tạo công thức của riêng họ
+    difficulty: {
+      type: String,
+      required: true,
+      enum: ['Dễ', 'Trung bình', 'Khó'],
+      default: 'Trung bình'
+    },
+    image: {
+      type: String,
+      default: '🍽️'
+    },
+    rating: {
+      type: Number,
+      default: 4.5,
+    },
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    },
+    }
   },
   {
     timestamps: true,
