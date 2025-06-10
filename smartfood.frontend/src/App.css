@@ -1,8 +1,29 @@
+/* Global styles for the scrollbar to hide it across the entire page (if applied to body) */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+body {
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Existing styles for #root */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  overflow: auto; /* Allow scrolling functionality */
+  /* These are already covered by global rules above, but can be explicitly set for #root if needed */
+  scrollbar-width: none; /* Firefox specific for #root */
+  -ms-overflow-style: none; /* IE and Edge specific for #root */
+}
+
+/* You can also add specific rules for #root's scrollbar if you only want to affect it */
+#root::-webkit-scrollbar {
+  display: none; /* Webkit specific for #root */
 }
 
 .logo {

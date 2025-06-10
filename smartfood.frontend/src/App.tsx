@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import './app.css'; // Đảm bảo file CSS của bạn được import ở đây
 
 const queryClient = new QueryClient();
 
