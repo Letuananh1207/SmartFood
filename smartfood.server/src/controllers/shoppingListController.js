@@ -191,9 +191,67 @@ const deleteShoppingList = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Shopping list removed.' });
 });
 
+
+
+const submitShare = asyncHandler(async (req, res) => {
+    const { shoppingListId, familyGroupId } = req.body;
+
+    if (!shoppingListId || !familyGroupId) {
+        res.status(400);
+        throw new Error('Please provide shoppingListId and familyGroupId.');
+    }
+
+    const shoppingList = await ShoppingList.findById(shoppingListId);
+
+    if (!shoppingList) {
+        res.status(404);
+        throw new Error('Shopping list not found.');
+    }
+
+    // Kiểm tra quyền:
+    // 1. Nếu danh sách là cá nhân (familyGroup: null), người dùng phải là chủ sở hữu của danh sách đó.
+    // 2. Nếu danh sách đã thuộc về một nhóm, người dùng phải là admin của nhóm đó.
+    // 3. Người dùng phải là thành viên của nhóm đích (familyGroupId).
+
+    const isOwner = shoppingList.user.toString() === req.user._id.toString();
+    const currentGroupMemberInfo = shoppingList.familyGroup
+        ? req.user.memberOfFamilyGroups.find(g => g._id.toString() === shoppingList.familyGroup.toString())
+        : null;
+
+    if (!isOwner && (!currentGroupMemberInfo || currentGroupMemberInfo.role !== 'admin')) {
+        res.status(403);
+        throw new Error('Not authorized to share this list. Only the list owner or current group admin can share/move it.');
+    }
+
+    // Kiểm tra xem người dùng có phải là thành viên của nhóm đích không
+    const targetGroupMemberInfo = req.user.memberOfFamilyGroups.find(g => g._id.toString() === familyGroupId.toString());
+    if (!targetGroupMemberInfo) {
+        res.status(403);
+        throw new Error('You are not a member of the target family group.');
+    }
+
+    // Kiểm tra xem nhóm đích có tồn tại không
+    const targetFamilyGroup = await FamilyGroup.findById(familyGroupId);
+    if (!targetFamilyGroup) {
+        res.status(404);
+        throw new Error('Target family group not found.');
+    }
+
+    // Cập nhật trường familyGroup
+    shoppingList.familyGroup = familyGroupId;
+    const updatedList = await shoppingList.save();
+
+    res.status(200).json({
+        message: 'Shopping list successfully assigned to the family group.',
+        updatedList,
+    });
+});
+
+
 module.exports = {
     getShoppingLists,
     createShoppingList,
     updateShoppingList,
     deleteShoppingList,
+    submitShare
 };

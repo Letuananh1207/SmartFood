@@ -8,12 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Users, Calendar, ShoppingCart, Loader2, AlertTriangle } from "lucide-react"; // Thêm Loader2
 import { toast } from "@/hooks/use-toast";
-import {
-  getShoppingLists,
-  createShoppingList, // Sẽ cần nếu bạn muốn tạo danh sách mới
-  updateShoppingList,
-  deleteShoppingList, // Sẽ cần nếu bạn muốn xóa danh sách
-} from "@/services/shoppingListService"; // Import service API
+import shoppingListService from "@/services/shoppingListService"; // Đây là cách import đúng cho default export
 
 // Định nghĩa kiểu dữ liệu cho Shopping Item
 interface ShoppingItem {
@@ -62,7 +57,7 @@ const ShoppingList = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const lists = await getShoppingLists();
+      const lists = await shoppingListService.getShoppingLists();
       // Giả định chúng ta sẽ làm việc với danh sách đầu tiên tìm được
       // Trong thực tế, bạn sẽ cần UI để người dùng chọn danh sách hoặc tạo mới
       if (lists && lists.length > 0) {

@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast"; // Import toast for notifications
 
 // Import API services
 import { getFoodItems } from "@/services/foodItemService"; // Giả định bạn có service này
-import { getShoppingLists } from "@/services/shoppingListService"; // Giả định bạn có service này
+import shoppingListService from "@/services/shoppingListService"; // Đây là cách đúng
 import { getMealPlans } from "@/services/mealPlanService"; // Giả định bạn có service này
 import { format, isBefore, addDays } from 'date-fns'; // Để xử lý ngày tháng
 
@@ -98,7 +98,7 @@ const Index = () => {
         try {
             const [foodItems, shoppingLists, mealPlans] = await Promise.all([
                 getFoodItems(),
-                getShoppingLists(),
+                shoppingListService.getShoppingLists(),
                 getMealPlans(),
             ]);
 
