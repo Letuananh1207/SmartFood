@@ -42,8 +42,14 @@ const Login = () => {
           variant: "success", // Nếu bạn có variant success
         });
 
-        // Chuyển hướng người dùng đến trang dashboard hoặc trang chính
-        navigate("/"); // Thay đổi thành route mong muốn của bạn
+        // --- Bắt đầu phần thay đổi: Kiểm tra vai trò của người dùng ---
+        if (response.data.role === "admin") {
+          navigate("/recipes"); // Chuyển hướng đến /recipes nếu là admin
+        } else {
+          navigate("/"); // Chuyển hướng đến trang chính cho các vai trò khác
+        }
+        // --- Kết thúc phần thay đổi ---
+
       } else {
         // Xử lý trường hợp không có token trong phản hồi (có thể xảy ra nếu API có lỗi logic)
         toast({

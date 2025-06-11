@@ -1,6 +1,7 @@
-
-import { Home, ShoppingCart, Refrigerator, Calendar, ChefHat, BarChart3, Settings, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Home, ShoppingCart, Refrigerator, Calendar, ChefHat, Users, Settings } from "lucide-react"; // Import Users icon
 import { NavLink, useLocation } from "react-router-dom";
+import { getUserInfo } from '../utils/auth'; // Đảm bảo đường dẫn đúng tới hàm getUserInfo
 
 import {
   Sidebar,
@@ -13,12 +14,19 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
+// Định nghĩa các mục menu dành cho User thông thường
+const userMenuItems = [
   { title: "Tổng quan", url: "/", icon: Home },
   { title: "Danh sách mua sắm", url: "/shopping-list", icon: ShoppingCart },
   { title: "Quản lý tủ lạnh", url: "/fridge", icon: Refrigerator },
   { title: "Kế hoạch bữa ăn", url: "/meal-plan", icon: Calendar },
   { title: "Gợi ý món ăn", url: "/recipes", icon: ChefHat },
+];
+
+// Định nghĩa các mục menu dành riêng cho Admin
+const adminMenuItems = [
+  { title: "Quản lý công thức", url: "/recipes", icon: ChefHat }, // Đã đổi tên
+  { title: "Quản lý người dùng", url: "/users", icon: Users }, // Thêm mục Quản lý người dùng
 ];
 
 const familyItems = [
@@ -33,6 +41,17 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userInfo = getUserInfo();
+    if (userInfo && userInfo.role) {
+      setUserRole(userInfo.role);
+    } else {
+      setUserRole(null);
+    }
+  }, []);
+
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
     return currentPath.startsWith(path);
@@ -40,10 +59,13 @@ export function AppSidebar() {
 
   const getNavClassName = (path: string) => {
     const active = isActive(path);
-    return active 
-      ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" 
+    return active
+      ? "bg-primary/10 text-primary font-medium border-r-2 border-primary"
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
+
+  // Chọn danh sách menu dựa trên vai trò người dùng
+  const displayedMenuItems = userRole === 'admin' ? adminMenuItems : userMenuItems;
 
   return (
     <Sidebar className="w-64">
@@ -64,7 +86,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Chức năng chính</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {displayedMenuItems.map((item) => ( // Sử dụng displayedMenuItems
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClassName(item.url)}>
@@ -78,23 +100,46 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Gia đình</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {familyItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClassName(item.url)}>
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Ẩn các nhóm menu khác nếu là admin */}
+        {userRole !== 'admin' && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Gia đình</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {familyItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink to={item.url} className={getNavClassName(item.url)}>
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Tùy chỉnh</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {settingsItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink to={item.url} className={getNavClassName(item.url)}>
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   );

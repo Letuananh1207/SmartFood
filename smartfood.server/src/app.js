@@ -9,6 +9,7 @@ const foodItemRoutes = require('./routes/foodItemRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const mealPlanRoutes = require('./routes/mealPlanRoutes');
 const familyGroupRoutes = require('./routes/familyGroupRoutes'); // <-- Dòng này đã được thêm
+const userRoutes = require('./routes/userRoutes'); // <-- THÊM DÒNG NÀY
 
 dotenv.config();
 connectDB(); // Kết nối MongoDB
@@ -31,6 +32,7 @@ app.use('/api/fooditems', foodItemRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/mealplans', mealPlanRoutes);
 app.use('/api/family-groups', familyGroupRoutes); // <-- Dòng này đã được thêm
+app.use('/api/users', userRoutes); // <-- THÊM DÒNG NÀY ĐỂ KÍCH HOẠT USER ROUTES
 
 // Error handling middleware
 app.use((err, req, res, next) => {

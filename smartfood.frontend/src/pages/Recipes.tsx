@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChefHat, Clock, Users, Search, Refrigerator, Star, Plus, X } from "lucide-react"; // Thêm icon X cho nút xóa ingredient
+import { ChefHat, Clock, Users, Search, Refrigerator, Star, Plus, X } from "lucide-react";
 
 import {
   getRecipes,
@@ -31,9 +31,11 @@ import {
   RecipeData,
   SuggestedRecipe
 } from "@/services/recipeService";
+import { getUserInfo } from '../utils/auth'; // Đảm bảo đường dẫn đúng
 
 // --- Component con: OverviewCards ---
-const OverviewCards = ({ recipes, canMakeRecipesCount, smartSuggestedRecipesLength }) => (
+// Truyền thêm prop isUserAdmin vào đây
+const OverviewCards = ({ recipes, canMakeRecipesCount, smartSuggestedRecipesLength, isUserAdmin }) => (
   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
     <Card className="border border-blue-200 shadow-sm bg-blue-50">
       <CardContent className="p-4">
@@ -46,32 +48,41 @@ const OverviewCards = ({ recipes, canMakeRecipesCount, smartSuggestedRecipesLeng
         </div>
       </CardContent>
     </Card>
-    <Card className="border border-green-200 shadow-sm bg-green-50">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-green-700">Có thể nấu ngay</p>
-            <p className="text-3xl font-bold text-green-900 mt-1">{canMakeRecipesCount}</p>
+
+    {/* ẨN "Có thể nấu ngay" nếu là admin */}
+    {!isUserAdmin && (
+      <Card className="border border-green-200 shadow-sm bg-green-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700">Có thể nấu ngay</p>
+              <p className="text-3xl font-bold text-green-900 mt-1">{canMakeRecipesCount}</p>
+            </div>
+            <Refrigerator className="h-8 w-8 text-green-600" />
           </div>
-          <Refrigerator className="h-8 w-8 text-green-600" />
-        </div>
-      </CardContent>
-    </Card>
-    <Card className="border border-purple-200 shadow-sm bg-purple-50">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-purple-700">Gợi ý thông minh</p>
-            <p className="text-3xl font-bold text-purple-900 mt-1">{smartSuggestedRecipesLength}</p>
+        </CardContent>
+      </Card>
+    )}
+
+    {/* ẨN "Gợi ý thông minh" nếu là admin */}
+    {!isUserAdmin && (
+      <Card className="border border-purple-200 shadow-sm bg-purple-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700">Gợi ý thông minh</p>
+              <p className="text-3xl font-bold text-purple-900 mt-1">{smartSuggestedRecipesLength}</p>
+            </div>
+            <Star className="h-8 w-8 text-purple-600" />
           </div>
-          <Star className="h-8 w-8 text-purple-600" />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    )}
   </div>
 );
 
 // --- Component con: RecipeList ---
+// Giữ nguyên RecipeList vì việc ẩn thông tin suggestion sẽ được xử lý ở component cha Recipes
 const RecipeList = ({ title, description, recipesToDisplay, suggestedRecipes, handleViewRecipeDetail }) => {
   const [showAll, setShowAll] = useState(false);
   const initialDisplayLimit = 3;
@@ -95,7 +106,8 @@ const RecipeList = ({ title, description, recipesToDisplay, suggestedRecipes, ha
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recipesToShow.map((recipe) => {
-                const suggestion = suggestedRecipes.find(s => s._id === recipe._id);
+                // Lấy thông tin gợi ý chỉ khi cần
+                const suggestion = suggestedRecipes?.find(s => s._id === recipe._id);
                 const availableIngredients = suggestion?.availableIngredients || [];
                 const missingIngredients = suggestion?.missingIngredients || [];
 
@@ -143,6 +155,7 @@ const RecipeList = ({ title, description, recipesToDisplay, suggestedRecipes, ha
                           </Badge>
                         </div>
 
+                        {/* HIỂN THỊ THÔNG TIN NGUYÊN LIỆU CÓ SẴN/THIẾU CHỈ KHI KHÔNG PHẢI ADMIN */}
                         {(availableIngredients.length > 0 || missingIngredients.length > 0) && (
                           <div className="space-y-1 text-xs p-2 bg-gray-50 rounded-md border border-gray-100">
                             {availableIngredients.length > 0 && (
@@ -190,6 +203,7 @@ const RecipeList = ({ title, description, recipesToDisplay, suggestedRecipes, ha
 };
 
 // --- Component con: AddRecipeDialog ---
+// Giữ nguyên AddRecipeDialog
 const AddRecipeDialog = ({
   showAddRecipeDialog,
   setShowAddRecipeDialog,
@@ -396,6 +410,7 @@ const AddRecipeDialog = ({
 );
 
 // --- Component con: RecipeDetailDialog ---
+// Giữ nguyên RecipeDetailDialog
 const RecipeDetailDialog = ({
   showRecipeDetailDialog,
   setShowRecipeDetailDialog,
@@ -486,6 +501,9 @@ const Recipes = () => {
   const [showRecipeDetailDialog, setShowRecipeDetailDialog] = useState(false);
   const [selectedRecipeDetail, setSelectedRecipeDetail] = useState<RecipeData | null>(null);
 
+  // --- STATE ĐỂ LƯU VAI TRÒ NGƯỜI DÙNG ---
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   // Memoize fetch functions using useCallback
   const fetchAllRecipes = useCallback(async () => {
     try {
@@ -515,14 +533,36 @@ const Recipes = () => {
     fetchAllRecipes();
   }, [fetchAllRecipes]); // Dependency on memoized function
 
+  // Fetch suggested recipes only if not admin
   useEffect(() => {
-    fetchSuggestedRecipesData();
-  }, [fetchSuggestedRecipesData]); // Dependency on memoized function
+    if (userRole === null) return; // Wait until userRole is determined
+    if (userRole !== 'admin') {
+      fetchSuggestedRecipesData();
+    } else {
+      setLoading(false); // If admin, no need to fetch suggestions, just set loading to false
+    }
+  }, [userRole, fetchSuggestedRecipesData]); // Re-run when userRole changes
 
-  const smartSuggestedRecipes = suggestedRecipes.filter(item =>
-    item.missingIngredients.length > 0 && item.missingIngredients.length <= 2
-  );
-  const canMakeRecipesCount = suggestedRecipes.filter(item => item.missingIngredients.length === 0).length;
+  // --- useEffect ĐỂ LẤY VAI TRÒ NGƯỜI DÙNG TỪ LOCAL STORAGE ---
+  useEffect(() => {
+    const userInfo = getUserInfo();
+    if (userInfo && userInfo.role) {
+      setUserRole(userInfo.role);
+    } else {
+      setUserRole(null);
+    }
+  }, []);
+
+  // Filter suggested recipes only if not admin
+  const smartSuggestedRecipes = userRole !== 'admin'
+    ? suggestedRecipes.filter(item =>
+        item.missingIngredients.length > 0 && item.missingIngredients.length <= 2
+      )
+    : [];
+
+  const canMakeRecipesCount = userRole !== 'admin'
+    ? suggestedRecipes.filter(item => item.missingIngredients.length === 0).length
+    : 0;
 
   const handleNewRecipeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -562,13 +602,14 @@ const Recipes = () => {
       await createRecipe(recipeToCreate);
 
       // Re-fetch all data to ensure UI is up-to-date
-      await Promise.all([fetchAllRecipes(), fetchSuggestedRecipesData()]);
+      await Promise.all([fetchAllRecipes(), userRole !== 'admin' ? fetchSuggestedRecipesData() : Promise.resolve()]);
 
       setNewRecipeData({
         name: "",
         description: "",
         image: "🍳",
         cookTime: "",
+        favourite: false, // Thêm trường favourite
         servings: 1,
         rating: 0,
         difficulty: "Dễ",
@@ -590,7 +631,8 @@ const Recipes = () => {
     setShowRecipeDetailDialog(true);
   };
 
-  if (loading) {
+  // Hiển thị loading trong khi chờ vai trò người dùng được xác định hoặc dữ liệu được tải
+  if (userRole === null || loading) {
     return <div className="p-6 text-center text-gray-600 text-sm">Đang tải dữ liệu...</div>;
   }
 
@@ -601,30 +643,36 @@ const Recipes = () => {
           <ChefHat className="h-8 w-8 text-primary" />
           Kho Công thức
         </h1>
-        <Button onClick={() => setShowAddRecipeDialog(true)} className="flex items-center gap-1 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm">
-          <Plus className="h-4 w-4" />
-          Thêm công thức mới
-        </Button>
+        {/* --- NÚT THÊM CÔNG THỨC MỚI (CHỈ HIỂN THỊ CHO ADMIN) --- */}
+        {userRole === 'admin' && (
+          <Button onClick={() => setShowAddRecipeDialog(true)} className="flex items-center gap-1 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm">
+            <Plus className="h-4 w-4" />
+            Thêm công thức mới
+          </Button>
+        )}
       </div>
       <p className="text-base text-gray-700 border-b pb-3 border-gray-200">
         Khám phá và quản lý bộ sưu tập công thức nấu ăn phong phú của bạn.
       </p>
 
-      {/* Overview Cards */}
+      {/* Overview Cards (Ẩn các card cụ thể nếu là admin) */}
       <OverviewCards
         recipes={recipes}
         canMakeRecipesCount={canMakeRecipesCount}
         smartSuggestedRecipesLength={smartSuggestedRecipes.length}
+        isUserAdmin={userRole === 'admin'} // Truyền prop isUserAdmin
       />
 
-      {/* Smart Suggested Recipes Section */}
-      <RecipeList
-        title="Gợi ý thông minh (Cần mua ít nguyên liệu)"
-        description="Các món ăn bạn có thể nấu với việc mua thêm một vài nguyên liệu (thiếu tối đa 2 nguyên liệu)."
-        recipesToDisplay={smartSuggestedRecipes}
-        suggestedRecipes={suggestedRecipes} // Pass suggestedRecipes for detailed info
-        handleViewRecipeDetail={handleViewRecipeDetail}
-      />
+      {/* Smart Suggested Recipes Section (Ẩn toàn bộ phần này nếu là admin) */}
+      {userRole !== 'admin' && (
+        <RecipeList
+          title="Gợi ý thông minh (Cần mua ít nguyên liệu)"
+          description="Các món ăn bạn có thể nấu với việc mua thêm một vài nguyên liệu (thiếu tối đa 2 nguyên liệu)."
+          recipesToDisplay={smartSuggestedRecipes}
+          suggestedRecipes={suggestedRecipes}
+          handleViewRecipeDetail={handleViewRecipeDetail}
+        />
+      )}
 
       {/* Search and Filter Section */}
       <Card className="border border-yellow-200 shadow-sm bg-yellow-50">
@@ -665,7 +713,7 @@ const Recipes = () => {
         title="Tất cả công thức"
         description={`${recipes.length} công thức được tìm thấy.`}
         recipesToDisplay={recipes}
-        suggestedRecipes={suggestedRecipes} // Pass suggestedRecipes for detailed info
+        suggestedRecipes={suggestedRecipes}
         handleViewRecipeDetail={handleViewRecipeDetail}
       />
 

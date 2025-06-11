@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +16,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
-import './app.css'; // Đảm bảo file CSS của bạn được import ở đây
+import UserManagementPage from "./pages/UserManagementPage"; // <-- Import trang quản lý người dùng
+import './app.css';
 
 const queryClient = new QueryClient();
 
@@ -42,6 +42,8 @@ const App = () => (
           <Route path="/reports" element={<Layout><Reports /></Layout>} />
           <Route path="/family" element={<Layout><Family /></Layout>} />
           <Route path="/settings" element={<Layout><Settings /></Layout>} />
+          {/* Cập nhật route /users để sử dụng UserManagementPage */}
+          <Route path="/users" element={<Layout><UserManagementPage /></Layout>} /> 
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
