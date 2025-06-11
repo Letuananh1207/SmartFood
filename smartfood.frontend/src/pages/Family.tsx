@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react"; // <--- Add React here
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ interface FamilyMember {
     email: string;
     avatar?: string;
   };
-  role: 'admin' | 'member';
+  role: 'admin' | 'member'; // Chỉ còn 2 role: admin và member
   joinedAt: string;
 }
 
@@ -34,7 +34,7 @@ interface FamilyGroupData {
   name: string;
   owner: string;
   members: FamilyMember[];
-  currentUserRole: 'admin' | 'member' | 'none';
+  currentUserRole: 'admin' | 'member' | 'none'; // Đã cập nhật currentUserRole
   createdAt: string;
   updatedAt: string;
 }
@@ -56,14 +56,19 @@ const Family = () => {
   });
 
   // Chọn nhóm đầu tiên nếu có, khi dữ liệu được load lần đầu
-  useState(() => {
+  // Sử dụng useEffect để đảm bảo logic này chạy sau khi component đã render
+  // và familyGroups đã có dữ liệu.
+  // Đồng thời, tránh lỗi "setState in render"
+  // (Lưu ý: Bạn có thể cần điều chỉnh logic này nếu có nhiều nhóm và bạn muốn lưu lựa chọn nhóm của người dùng.)
+  React.useEffect(() => {
     if (familyGroups && familyGroups.length > 0 && !activeGroupId) {
       setActiveGroupId(familyGroups[0]._id);
     }
-  });
+  }, [familyGroups, activeGroupId]); // Thêm activeGroupId vào dependency array
 
   const activeGroup = familyGroups?.find(group => group._id === activeGroupId);
   const familyMembers = activeGroup ? activeGroup.members : [];
+  // Lấy vai trò của người dùng hiện tại trong nhóm đang hoạt động
   const currentUserRole = activeGroup ? activeGroup.currentUserRole : 'none';
 
   // Mutation để tạo nhóm gia đình mới
@@ -174,7 +179,7 @@ const Family = () => {
   };
 
   const roleColors = {
-    admin: "destructive",
+    admin: "destructive", // Hoặc màu sắc khác bạn muốn cho admin
     member: "secondary"
   };
 
@@ -263,7 +268,7 @@ const Family = () => {
           {activeGroup ? (
             <>
               {/* Family Members List - Hiển thị trước */}
-              <Card className="mb-6"> {/* Thêm mb-6 để tạo khoảng cách với phần Mời thành viên */}
+              <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Thành viên của nhóm ({activeGroup.name})</CardTitle>
                   <CardDescription>
@@ -301,10 +306,11 @@ const Family = () => {
                             </div>
                           </div>
 
-                          {/* Actions for members */}
+                          {/* Actions for members - Chỉ hiển thị nếu currentUserRole là 'admin' */}
                           <div className="flex gap-2">
                             {currentUserRole === 'admin' && (
                               <>
+                                {/* Nút thay đổi vai trò (admin <-> member) */}
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -313,6 +319,7 @@ const Family = () => {
                                 >
                                   <Settings className="h-4 w-4" />
                                 </Button>
+                                {/* Nút xóa thành viên (chỉ được xóa nếu không phải admin duy nhất) */}
                                 {(member.role !== 'admin' || (member.role === 'admin' && activeGroup.members.filter(m => m.role === 'admin').length > 1)) && (
                                   <Button
                                     variant="ghost"
@@ -330,15 +337,17 @@ const Family = () => {
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500">Chưa có thành viên nào trong nhóm này. Hãy mời một người!</p>
+                      <p className="text-gray-500">Chưa có thành viên nào trong nhóm này.
+                        {currentUserRole === 'admin' && " Hãy mời một người!"}
+                      </p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Invite New Member - Đã di chuyển xuống cuối */}
+              {/* Invite New Member - CHỈ HIỂN THỊ NẾU currentUserRole LÀ 'admin' */}
               {currentUserRole === 'admin' && (
-                <Card> {/* Bỏ mb-6 nếu đây là phần tử cuối cùng trong `activeGroup` */}
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
@@ -353,7 +362,7 @@ const Family = () => {
                       </Button>
                     </CardTitle>
                     {showInviteForm && (
-                      <CardContent className="pt-4">
+                      <CardContent className="pt-4"> {/* Đã chuyển CardContent vào đây */}
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="invite-email">Email người dùng</Label>
