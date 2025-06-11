@@ -95,7 +95,7 @@ const ShoppingList = () => {
 
     setIsLoading(true);
     try {
-      const updatedList = await updateShoppingList(listToUpdate._id, {
+      const updatedList = await shoppingListService.updateShoppingList(listToUpdate._id, {
         items: listToUpdate.items,
       });
       setCurrentShoppingList(updatedList); // Cập nhật state với dữ liệu mới từ backend
