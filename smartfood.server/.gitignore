@@ -1,8 +1,6 @@
 # Thư mục node_modules chứa các package đã cài
 node_modules/
 
-# File chứa biến môi trường
-.env
 
 # Log files
 npm-debug.log*
